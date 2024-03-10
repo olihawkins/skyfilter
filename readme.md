@@ -2,6 +2,12 @@
 
 Read and process data from the Bluesky firehose.
 
+## Streaming
+
+```zsh
+python -m skyfilter.stream
+```
+
 ## Environment
 
 ### Pipenv setup
