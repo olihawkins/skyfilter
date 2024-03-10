@@ -1,0 +1,14 @@
+# Directories
+/.venv
+/models
+
+# Pycache
+**/__pycache__
+
+# Mac files
+**/.DS_Store
+
+# Dev files
+sftp-config.json
+Pipfile.lock
+.python-version
