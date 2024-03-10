@@ -1,3 +1,5 @@
+"""Get operations by type from an atproto commit"""
+
 # Imports ----------------------------------------------------------------------------------------
 
 from atproto import CAR
