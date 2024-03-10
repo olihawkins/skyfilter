@@ -3,17 +3,43 @@
 # Imports ----------------------------------------------------------------------------------------
 
 import asyncio
+import logging
+import os
 import psycopg
+import signal
 
 from atproto import AsyncFirehoseSubscribeReposClient
 from atproto import parse_subscribe_repos_message
 from atproto import firehose_models as fm
 from atproto import models
-from atproto import Client
+from dotenv import load_dotenv
+from types import FrameType
 from typing import Callable
 
+from skyfilter.database import get_connection_string
 from skyfilter.operations import get_ops_by_type
 from skyfilter.utils import str_squish
+
+# Setup ------------------------------------------------------------------------------------------
+
+# Load environment variables
+load_dotenv()
+
+# Create logger
+logger = logging.getLogger(__name__)
+
+# Signal monitor ---------------------------------------------------------------------------------
+    
+class SignalMonitor:
+    
+    shutdown = False
+  
+    def __init__(self) -> None:
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGTERM, self.exit)
+
+    def exit(self, signum: int, frame: FrameType) -> None:
+        self.shutdown = True
 
 # Message handler --------------------------------------------------------------------------------
 
@@ -23,7 +49,7 @@ def get_message_handler(queue: asyncio.Queue) -> Callable[[fm.MessageFrame], Non
 
         commit = parse_subscribe_repos_message(message)
 
-        # Check that it's a commit message with .blocks inside
+        # Check that the message is a commit with .blocks inside
         if not isinstance(commit, models.ComAtprotoSyncSubscribeRepos.Commit):
             return
 
@@ -49,7 +75,7 @@ def get_message_handler(queue: asyncio.Queue) -> Callable[[fm.MessageFrame], Non
                 # Impose filter rules
                 try:
                     
-                    # Check there are languages specified
+                    # Check there is a field for languages
                     if record["langs"] is None:
                         return
                     
@@ -57,7 +83,7 @@ def get_message_handler(queue: asyncio.Queue) -> Callable[[fm.MessageFrame], Non
                     if "en" not in record["langs"]:
                         return
                     
-                    # Check there is text
+                    # Check there is a field for text
                     if record["text"] is None:
                         return
                     
@@ -65,26 +91,24 @@ def get_message_handler(queue: asyncio.Queue) -> Callable[[fm.MessageFrame], Non
                     if len(record["text"]) == 0:
                         return
                     
-                    # Check there is embedded data 
+                    # Check there is a field for embedded data 
                     if record["embed"] is None:
                         return
 
-                    # Check there are images
+                    # Check the embedded data contains images
                     if "images" not in record["embed"].keys() and \
                             ("media" not in record["embed"].keys() or \
                             "images" not in record["embed"]["media"].keys()):
                         return
                     
                     # Add the message data to the queue
-                    print(record)
                     await queue.put({
                         "uri": uri,
                         "record": record
                     })
                                 
                 except Exception as e:
-                    print(e)
-                    break
+                    logger.error(f"Error in get_message_handler: {e}")
 
         # Process each post in deleted: todo
 
@@ -93,7 +117,7 @@ def get_message_handler(queue: asyncio.Queue) -> Callable[[fm.MessageFrame], Non
 # Message recorder -------------------------------------------------------------------------------
 
 async def message_recorder(queue: asyncio.Queue) -> None:
-    dsn = ""
+    dsn = get_connection_string()
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
             while True:
@@ -113,13 +137,26 @@ async def message_recorder(queue: asyncio.Queue) -> None:
                     conn.commit()
                     queue.task_done()
                 except Exception as e:
-                    print(e)
+                    logger.error(f"Error in message_recorder: {e}")
                     conn.rollback()
-                    break
 
 # Stream from firehose ---------------------------------------------------------------------------
 
-async def run(lifetime: int) -> None:
+async def stream(
+        lifecycle: int = 10,
+        logfile: str = os.path.join("logs", "stream.log")) -> None:
+
+    # Create logger
+    logging.basicConfig(
+        filename=logfile, 
+        filemode="w", 
+        format="%(asctime)s - %(levelname)s - %(message)s", 
+        level=logging.INFO)
+
+    logger.info("Stream starting")
+
+    # Create signal monitor
+    signal_monitor = SignalMonitor()
 
     # Create client
     client = AsyncFirehoseSubscribeReposClient()
@@ -132,11 +169,13 @@ async def run(lifetime: int) -> None:
     handler_task = asyncio.create_task(client.start(message_handler))
 
     # Create message recorder
-    #message_recorder = get_message_recorder(queue)
     recorder_task = asyncio.create_task(message_recorder(queue))
     
-    # Run for lifetime seconds
-    await asyncio.sleep(lifetime)
+    # Run for lifecycle seconds
+    while not signal_monitor.shutdown:
+        await asyncio.sleep(lifecycle)
+
+    logger.info("Stream shutting down")
 
     # Shut down tasks when complete
     await client.stop()
@@ -144,10 +183,8 @@ async def run(lifetime: int) -> None:
     await queue.join()
     recorder_task.cancel()
 
-# Get data for a post ----------------------------------------------------------------------------
-
-def get_post_thread(uri: str) -> str:
-    client = Client()
-    client.login("", "")
-    post_thread = client.get_post_thread(uri, depth=0)
-    return post_thread.model_dump_json()
+# Main -------------------------------------------------------------------------------------------
+    
+if __name__ == '__main__':
+    asyncio.run(stream())
+  
