@@ -1,6 +1,7 @@
 # Directories
-/.venv
-/models
+.venv/
+models/
+logs/
 
 # Pycache
 **/__pycache__
