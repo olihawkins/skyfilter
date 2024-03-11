@@ -18,7 +18,6 @@ from typing import Callable
 
 from skyfilter.database import get_connection_string
 from skyfilter.operations import get_ops_by_type
-from skyfilter.utils import str_squish
 
 # Setup ------------------------------------------------------------------------------------------
 
@@ -39,6 +38,8 @@ class SignalMonitor:
         signal.signal(signal.SIGTERM, self.exit)
 
     def exit(self, signum: int, frame: FrameType) -> None:
+        print("Stream shutting down")
+        logger.info("Stream shutting down")
         self.shutdown = True
 
 # Message handler --------------------------------------------------------------------------------
@@ -124,7 +125,7 @@ async def message_recorder(queue: asyncio.Queue) -> None:
                 try:
                     post = await queue.get()
                     post_uri = post["uri"]
-                    post_text = str_squish(post["record"]["text"])
+                    post_text = post["record"]["text"]
                     post_created_at = post["record"]["created_at"]
                     sql = """
                         INSERT INTO posts (
@@ -172,10 +173,10 @@ async def stream(
     recorder_task = asyncio.create_task(message_recorder(queue))
     
     # Run for lifecycle seconds
+    print("Stream running")
+    logger.info("Stream running")
     while not signal_monitor.shutdown:
         await asyncio.sleep(lifecycle)
-
-    logger.info("Stream shutting down")
 
     # Shut down tasks when complete
     await client.stop()

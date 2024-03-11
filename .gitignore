@@ -13,5 +13,5 @@ sftp-config.json
 Pipfile.lock
 .python-version
 
-# Crecentials
+# Credentials
 .env
