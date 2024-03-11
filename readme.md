@@ -13,7 +13,7 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=skyfilter
 DB_USER=postgres_user_name
-DB_PASS=postgres_user_passworrd
+DB_PASS=postgres_user_password
 ```
 
 You can stream from the Bluesky firehose without authentication, but if you want to make follow up requests for more detailed data on individual posts using the `fetch_post_thread` function in `process.py` you should also define the following environment variables with your Bluesky credentials.
