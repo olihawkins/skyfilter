@@ -1,6 +1,6 @@
 """Stream data from the Bluesky firehose and process results asynchronously"""
 
-# Imports ----------------------------------------------------------------------------------------
+# Imports --------------------------------------------------------------------
 
 import asyncio
 import logging
@@ -20,7 +20,7 @@ from typing import Coroutine
 from skyfilter.database import get_connection_string
 from skyfilter.operations import get_ops_by_type
 
-# Setup ------------------------------------------------------------------------------------------
+# Setup ----------------------------------------------------------------------
 
 # Load environment variables
 load_dotenv()
@@ -28,7 +28,7 @@ load_dotenv()
 # Create logger
 logger = logging.getLogger(__name__)
 
-# Signal monitor ---------------------------------------------------------------------------------
+# Signal monitor -------------------------------------------------------------
     
 class SignalMonitor:
     
@@ -43,7 +43,7 @@ class SignalMonitor:
         logger.info("Stream shutting down")
         self.shutdown = True
 
-# Message handler --------------------------------------------------------------------------------
+# Message handler ------------------------------------------------------------
 
 def get_message_handler(queue: asyncio.Queue) -> \
         Callable[[fm.MessageFrame], Coroutine[None, None, None]]:
@@ -117,7 +117,7 @@ def get_message_handler(queue: asyncio.Queue) -> \
 
     return message_handler
 
-# Message recorder -------------------------------------------------------------------------------
+# Message recorder -----------------------------------------------------------
 
 async def message_recorder(queue: asyncio.Queue) -> None:
     dsn = get_connection_string()
@@ -143,7 +143,7 @@ async def message_recorder(queue: asyncio.Queue) -> None:
                     logger.error(f"Error in message_recorder: {e}")
                     conn.rollback()
 
-# Stream from firehose ---------------------------------------------------------------------------
+# Stream from firehose -------------------------------------------------------
 
 async def stream(
         lifecycle: int = 10,
@@ -186,7 +186,7 @@ async def stream(
     await queue.join()
     recorder_task.cancel()
 
-# Main -------------------------------------------------------------------------------------------
+# Main -----------------------------------------------------------------------
     
 if __name__ == '__main__':
     asyncio.run(stream())
