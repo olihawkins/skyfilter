@@ -11,7 +11,7 @@ def str_squish(s: str) -> str:
 
 # Check dictionary for nested key --------------------------------------------
 
-def check_nested_key(data, keys):
+def nested_key_exists(data: dict, keys: list) -> bool:
     try:
         for key in keys:
             data = data[key]
