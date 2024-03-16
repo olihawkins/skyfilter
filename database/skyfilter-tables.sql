@@ -4,7 +4,7 @@ CREATE TABLE posts(
     post_uri text NOT NULL UNIQUE,
     post_text text NOT NULL,
     post_created_at timestamp NOT NULL,
-    post_catalogued boolean NOT NULL DEFAULT FALSE,
+    post_status int NOT NULL DEFAULT 1,
     created_at timestamp NOT NULL DEFAULT now(),
     updated_at timestamp NOT NULL DEFAULT now()
 );

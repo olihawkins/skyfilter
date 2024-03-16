@@ -15,6 +15,7 @@ from atproto import models
 from dotenv import load_dotenv
 from types import FrameType
 from typing import Callable
+from typing import Coroutine
 
 from skyfilter.database import get_connection_string
 from skyfilter.operations import get_ops_by_type
@@ -37,14 +38,15 @@ class SignalMonitor:
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGTERM, self.exit)
 
-    def exit(self, signum: int, frame: FrameType) -> None:
+    def exit(self, signum: int, frame: FrameType | None) -> None:
         print("Stream shutting down")
         logger.info("Stream shutting down")
         self.shutdown = True
 
 # Message handler --------------------------------------------------------------------------------
 
-def get_message_handler(queue: asyncio.Queue) -> Callable[[fm.MessageFrame], None]:
+def get_message_handler(queue: asyncio.Queue) -> \
+        Callable[[fm.MessageFrame], Coroutine[None, None, None]]:
 
     async def message_handler(message: fm.MessageFrame) -> None:
 

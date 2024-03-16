@@ -1,20 +1,29 @@
-"""Process posts"""
+"""Process posts that have been saved in the database"""
 
-# Imports --------------------------------------------------------------------
+# Imports ----------------------------------------------------------------------------------------
 
+import asyncio
+import logging
 import os
+import psycopg
+import signal
 
-from atproto import Client
+from atproto import AsyncClient
 
-# Functions ------------------------------------------------------------------
+from skyfilter.utils import check_nested_key
 
-def get_client() -> Client:
-    client = Client()
-    client.login(os.getenv("BSKY_USER"), os.getenv("BSKY_PASS"))
+# Get a client -----------------------------------------------------------------------------------
+
+async def get_client() -> AsyncClient:
+    client = AsyncClient()
+    await client.login(os.getenv("BSKY_USER"), os.getenv("BSKY_PASS"))
     return client
 
-def fetch_post_thread(uri: str, client: Client = None) -> str:
+# Fetch a post thread ----------------------------------------------------------------------------
+
+async def fetch_post_thread(uri: str, client: AsyncClient | None = None) -> dict:
     if client is None:
-        client = get_client()
-    post_thread = client.get_post_thread(uri, depth=0)
-    return post_thread.model_dump_json()
+        client = await get_client()
+    post_thread = await client.get_post_thread(uri, depth=0)
+    return post_thread.model_dump()
+
