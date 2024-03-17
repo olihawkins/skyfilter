@@ -14,6 +14,7 @@ SF_DB_PORT=5432
 SF_DB_NAME=skyfilter
 SF_DB_USER=postgres_user_name
 SF_DB_PASS=postgres_user_password
+SF_DB_IMAGES_DIR=database/images
 ```
 
 You can stream from the Bluesky firehose without authentication, but if you want to make follow up requests for more detailed data on individual posts using the `fetch_post_thread` function in `process.py` you should also define the following environment variables with your Bluesky credentials.
