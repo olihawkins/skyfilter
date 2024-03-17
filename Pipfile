@@ -8,6 +8,7 @@ ipython = "*"
 atproto = "*"
 psycopg = {extras = ["binary"], version = "*"}
 python-dotenv = "*"
+requests = "*"
 
 [dev-packages]
 
