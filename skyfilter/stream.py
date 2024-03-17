@@ -6,19 +6,18 @@ import asyncio
 import logging
 import os
 import psycopg
-import signal
 
 from atproto import AsyncFirehoseSubscribeReposClient
 from atproto import parse_subscribe_repos_message
 from atproto import firehose_models as fm
 from atproto import models
 from dotenv import load_dotenv
-from types import FrameType
 from typing import Callable
 from typing import Coroutine
 
 from skyfilter.database import get_connection_string
 from skyfilter.operations import get_ops_by_type
+from skyfilter.utils import SignalMonitor
 
 # Setup ----------------------------------------------------------------------
 
@@ -27,21 +26,6 @@ load_dotenv()
 
 # Create logger
 logger = logging.getLogger(__name__)
-
-# Signal monitor -------------------------------------------------------------
-    
-class SignalMonitor:
-    
-    shutdown = False
-  
-    def __init__(self) -> None:
-        signal.signal(signal.SIGINT, self.exit)
-        signal.signal(signal.SIGTERM, self.exit)
-
-    def exit(self, signum: int, frame: FrameType | None) -> None:
-        print("Stream shutting down")
-        logger.info("Stream shutting down")
-        self.shutdown = True
 
 # Message handler ------------------------------------------------------------
 
@@ -159,7 +143,7 @@ async def stream(
     logger.info("Stream starting")
 
     # Create signal monitor
-    signal_monitor = SignalMonitor()
+    signal_monitor = SignalMonitor(logger)
 
     # Create client
     client = AsyncFirehoseSubscribeReposClient()

@@ -3,6 +3,25 @@
 # Imports --------------------------------------------------------------------
 
 import re
+import signal
+
+from types import FrameType
+
+# Signal monitor class -------------------------------------------------------
+    
+class SignalMonitor:
+    
+    shutdown = False
+  
+    def __init__(self, logger) -> None:
+        self.logger = logger
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGTERM, self.exit)
+
+    def exit(self, signum: int, frame: FrameType | None) -> None:
+        print("Stream shutting down")
+        self.logger.info("Stream shutting down")
+        self.shutdown = True
 
 # Squish string --------------------------------------------------------------
 

@@ -8,13 +8,12 @@ import logging
 import requests
 import os
 import psycopg
-import signal
 
 from atproto import AsyncClient
 from dotenv import load_dotenv
 
+from skyfilter import database as db
 from skyfilter.utils import nested_key_exists
-
 
 # Setup ----------------------------------------------------------------------
 
@@ -165,28 +164,33 @@ async def process_post(
         uri: str, 
         client: AsyncClient) -> dict:
     
-    # Initialise incomplate result
+    # Initialise uncatalogued result
     result = { 
-        "complete": False,
+        "status": db.POST_STATUS_UNCATALOGUED,
         "uri": uri 
     }
 
     # Fetch post images
     post_images = await fetch_post_images(uri, client)
     
+    # If no post images, return fetch post error
     if len(post_images) == 0:
+        result["status"] = db.POST_STATUS_FETCH_POST_ERROR
         return result
     
     # Fetch images
     images = await fetch_images(post_images)
 
+    # If no images, return fetch image error
     if len(images) == 0:
+        result["status"] = db.POST_STATUS_FETCH_IMAGE_ERROR
         return result
     
     # Update result
     result["images"] = images
     
     # Classify images
+
 
     return result
 
