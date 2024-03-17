@@ -9,6 +9,7 @@ atproto = "*"
 psycopg = {extras = ["binary"], version = "*"}
 python-dotenv = "*"
 requests = "*"
+numpy = "*"
 
 [dev-packages]
 

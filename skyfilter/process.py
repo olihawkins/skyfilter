@@ -6,6 +6,7 @@ import asyncio
 import datetime
 import logging
 import requests
+import numpy as np
 import os
 import psycopg
 
@@ -22,6 +23,9 @@ load_dotenv()
 
 # Create logger
 logger = logging.getLogger(__name__)
+
+# Create RNG
+RNG = np.random.default_rng()
 
 # Get a client ---------------------------------------------------------------
 
@@ -98,6 +102,14 @@ def get_image_download_path(image_url: str) -> str:
     image_filepath = os.path.join(*filepath_dirs, date_dir, image_filename)
     return image_filepath
 
+# Delete images --------------------------------------------------------------
+
+def delete_images(images: list) -> list:
+    for image in images:
+        if image["complete"]:
+            os.remove(image["filepath"])
+    return []
+
 # Fetch post image -----------------------------------------------------------
 
 async def fetch_image(post_image: dict) -> dict:
@@ -149,14 +161,50 @@ async def fetch_images(post_images: list) -> list:
         if not image["complete"]:
             fetch_errors = True
     
-    # If there were fetch errors, rollback all fetches
+    # If there were fetch errors, delete images for this post
     if fetch_errors: 
-        for image in images:
-            if image["complete"]:
-                os.remove(image["filepath"])
-        images = []
-        
+        images = delete_images(images)
+         
     return images
+
+# Classify images ------------------------------------------------------------
+
+def classify_images(images: list) -> list:
+
+    # Classify with pseudo error
+    classify_errors = False
+    for image in images:
+        image["score"] = RNG.random()
+        if image["score"] < 0.02:
+            classify_errors = True
+
+    # If there were classify errors, delete images for this post
+    if classify_errors: 
+        images = delete_images(images)
+
+    return images
+
+# Classify post --------------------------------------------------------------
+
+def classify_post(classified_images: list) -> int:
+    classification = 0
+    for image in classified_images:
+        if image["score"] >= 0.5:
+            classification = 1
+    return classification
+
+# Drop filter ----------------------------------------------------------------
+
+def drop_random_negatives(images: list) -> bool:
+    
+    # Randomly drop negative results below threshold
+    drop = False
+    highest_score = np.max([image["score"] for image in images])
+    if highest_score < 0.3 and RNG.random() < 0.5:
+        delete_images(images)
+        drop = True        
+
+    return drop
 
 # Process post ---------------------------------------------------------------
 
@@ -181,19 +229,34 @@ async def process_post(
     # Fetch images
     images = await fetch_images(post_images)
 
-    # If no images, return fetch image error
+    # If fetch errors, return fetch image error
     if len(images) == 0:
         result["status"] = db.POST_STATUS_FETCH_IMAGE_ERROR
         return result
-    
-    # Update result
-    result["images"] = images
-    
+     
     # Classify images
+    classified_images = classify_images(images)
 
+    # If classify errors, return classify image error
+    if len(classified_images) == 0:
+        result["status"] = db.POST_STATUS_CLASSIFY_IMAGE_ERROR
+        return result
+
+    # Drop random negative posts
+    drop = drop_random_negatives(classified_images)
+
+    # If drop, return dropped
+    if drop:
+        print("dropped")
+        result["status"] = db.POST_STATUS_DROPPED
+        return result
+
+    # Update result
+    result["status"] = db.POST_STATUS_COMPLETE
+    result["classification"] = classify_post(classified_images)
+    result["images"] = classified_images
 
     return result
-
 
 # Process post ---------------------------------------------------------------
 

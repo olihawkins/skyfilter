@@ -49,7 +49,7 @@ pipenv install --python 3.10.13
 #### Install packages
 
 ```zsh
-pipenv install ipython atproto "psycopg[binary]" python-dotenv requests
+pipenv install ipython atproto "psycopg[binary]" python-dotenv requests numpy
 ```
 
 #### Activate the environment
@@ -77,7 +77,7 @@ pip install --upgrade pip
 #### Install packages
 
 ```zsh
-pip install ipython atproto "psycopg[binary]" python-dotenv requests
+pip install ipython atproto "psycopg[binary]" python-dotenv requests numpy
 ```
 
 #### Activate the environment
