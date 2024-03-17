@@ -258,7 +258,7 @@ async def process_post(
 
     return result
 
-# Process post ---------------------------------------------------------------
+# Process --------------------------------------------------------------------
 
 async def process(
         logfile: str = os.path.join("logs", "process.log")) -> None:
