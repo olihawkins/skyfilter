@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 async def get_client() -> AsyncClient:
     client = AsyncClient()
     await client.login(
-        os.getenv("BSKY_USER"), 
-        os.getenv("BSKY_PASS"))
+        os.getenv("SF_BSKY_USER"), 
+        os.getenv("SF_BSKY_PASS"))
     return client
 
 # Fetch a post thread --------------------------------------------------------

@@ -9,18 +9,18 @@ The project is set up to use `dotenv` to load environment variables from a file 
 The following environment variables should be defined in `.env` to connect to Postgres.
 
 ```zsh
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=skyfilter
-DB_USER=postgres_user_name
-DB_PASS=postgres_user_password
+SF_DB_HOST=localhost
+SF_DB_PORT=5432
+SF_DB_NAME=skyfilter
+SF_DB_USER=postgres_user_name
+SF_DB_PASS=postgres_user_password
 ```
 
 You can stream from the Bluesky firehose without authentication, but if you want to make follow up requests for more detailed data on individual posts using the `fetch_post_thread` function in `process.py` you should also define the following environment variables with your Bluesky credentials.
 
 ```zsh
-BSKY_USER=usernname.bsky.social
-BSKY_PASS=bluesky_password
+SF_BSKY_USER=usernname.bsky.social
+SF_BSKY_PASS=bluesky_password
 ```
 
 ## Streaming
