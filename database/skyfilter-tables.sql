@@ -26,7 +26,7 @@ CREATE TABLE images(
     image_alt text NOT NULL,
     image_height int,
     image_width int,
-    image_score float,
+    image_score double precision NOT NULL,
     post_id int NOT NULL,
     created_at timestamp NOT NULL DEFAULT now(),
     updated_at timestamp NOT NULL DEFAULT now(),
