@@ -13,14 +13,15 @@ class SignalMonitor:
     
     shutdown = False
   
-    def __init__(self, logger) -> None:
+    def __init__(self, name, logger) -> None:
+        self.name = name
         self.logger = logger
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGTERM, self.exit)
 
     def exit(self, signum: int, frame: FrameType | None) -> None:
-        print("Stream shutting down")
-        self.logger.info("Stream shutting down")
+        print(f"{self.name} shutting down")
+        self.logger.info(f"{self.name} shutting down")
         self.shutdown = True
 
 # Squish string --------------------------------------------------------------

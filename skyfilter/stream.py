@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from typing import Callable
 from typing import Coroutine
 
-from skyfilter.database import get_connection_string
+from skyfilter import database as db
 from skyfilter.operations import get_ops_by_type
 from skyfilter.utils import SignalMonitor
 
@@ -62,6 +62,8 @@ def get_message_handler(queue: asyncio.Queue) -> \
                 # Impose filter rules
                 try:
                     
+                    logger.info(record)
+
                     # Check there is a field for languages
                     if record["langs"] is None:
                         return
@@ -95,7 +97,7 @@ def get_message_handler(queue: asyncio.Queue) -> \
                     })
                                 
                 except Exception as e:
-                    logger.error(f"Error in get_message_handler: {e}")
+                    logger.error(f"Error in stream.get_message_handler: {e}")
 
         # Process each post in deleted: todo
 
@@ -104,7 +106,7 @@ def get_message_handler(queue: asyncio.Queue) -> \
 # Message recorder -----------------------------------------------------------
 
 async def message_recorder(queue: asyncio.Queue) -> None:
-    dsn = get_connection_string()
+    dsn = db.get_connection_string()
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
             while True:
@@ -124,7 +126,7 @@ async def message_recorder(queue: asyncio.Queue) -> None:
                     conn.commit()
                     queue.task_done()
                 except Exception as e:
-                    logger.error(f"Error in message_recorder: {e}")
+                    logger.error(f"Error in stream.message_recorder: {e}")
                     conn.rollback()
 
 # Stream from firehose -------------------------------------------------------
@@ -143,7 +145,7 @@ async def stream(
     logger.info("Stream starting")
 
     # Create signal monitor
-    signal_monitor = SignalMonitor(logger)
+    signal_monitor = SignalMonitor("Stream", logger)
 
     # Create client
     client = AsyncFirehoseSubscribeReposClient()
@@ -158,9 +160,11 @@ async def stream(
     # Create message recorder
     recorder_task = asyncio.create_task(message_recorder(queue))
     
-    # Run for lifecycle seconds
+    # Report running
     print("Stream running")
     logger.info("Stream running")
+
+    # Run for lifecycle seconds
     while not signal_monitor.shutdown:
         await asyncio.sleep(lifecycle)
 

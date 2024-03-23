@@ -32,7 +32,17 @@ Run `stream` as a module to start streaming.
 python -m skyfilter.stream
 ```
 
-Send SIGINT with Ctrl + C to shut down gracefully.
+## Processing
+
+Run `process` as a module to start processing posts.
+
+```zsh
+python -m skyfilter.process
+```
+
+## Shuting down
+
+Send SIGINT with Ctrl + C to either process to shut down gracefully.
 
 ## Environment
 
