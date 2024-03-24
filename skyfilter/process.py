@@ -223,7 +223,7 @@ def drop_random_negatives(images: list) -> bool:
     # Randomly drop negative results below threshold
     drop = False
     highest_score = np.max([image["score"] for image in images])
-    if highest_score < 0.3 and RNG.random() < 0.9:
+    if highest_score < 0.2 and RNG.random() < 0.9:
         delete_images(images)
         drop = True
 
