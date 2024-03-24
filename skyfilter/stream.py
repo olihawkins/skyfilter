@@ -62,7 +62,8 @@ def get_message_handler(queue: asyncio.Queue) -> \
                 # Impose filter rules
                 try:
                     
-                    logger.info(record)
+                    # Uncoment to drop raw records into log file
+                    # logger.info(record)
 
                     # Check there is a field for languages
                     if record["langs"] is None:

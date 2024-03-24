@@ -10,6 +10,10 @@ psycopg = {extras = ["binary"], version = "*"}
 python-dotenv = "*"
 requests = "*"
 numpy = "*"
+torch = "*"
+torchvision = "*"
+firekit = "*"
+pandas = "*"
 
 [dev-packages]
 

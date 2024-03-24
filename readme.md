@@ -17,7 +17,7 @@ SF_DB_PASS=postgres_user_password
 SF_DB_IMAGES_DIR=database/images
 ```
 
-You can stream from the Bluesky firehose without authentication, but if you want to make follow up requests for more detailed data on individual posts using the `fetch_post_thread` function in `process.py` you should also define the following environment variables with your Bluesky credentials.
+You can stream from the Bluesky firehose without authentication, but if you want to make follow up requests for more detailed data on individual posts using the `fetch_post` function in `process.py` you should also define the following environment variables with your Bluesky credentials.
 
 ```zsh
 SF_BSKY_USER=usernname.bsky.social
@@ -59,7 +59,7 @@ pipenv install --python 3.10.13
 #### Install packages
 
 ```zsh
-pipenv install ipython atproto "psycopg[binary]" python-dotenv requests numpy
+pipenv install ipython atproto "psycopg[binary]" python-dotenv requests numpy pandas torch torchvision firekit
 ```
 
 #### Activate the environment
@@ -87,7 +87,7 @@ pip install --upgrade pip
 #### Install packages
 
 ```zsh
-pip install ipython atproto "psycopg[binary]" python-dotenv requests numpy
+pip install ipython atproto "psycopg[binary]" python-dotenv requests numpy pandas torch torchvision firekit
 ```
 
 #### Activate the environment

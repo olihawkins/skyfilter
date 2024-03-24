@@ -11,12 +11,16 @@ import os
 import psycopg
 
 from atproto import AsyncClient
+from firekit.predict import Predictor
+from firekit.utils import sigmoid
 from datetime import date
 from datetime import datetime
 from dotenv import load_dotenv
 from psycopg.rows import dict_row
 
 from skyfilter import database as db
+from skyfilter.models import load_predictor
+from skyfilter.models import get_image_dataset
 from skyfilter.utils import nested_key_exists
 from skyfilter.utils import SignalMonitor
 
@@ -70,7 +74,7 @@ async def fetch_post(
             post = post_thread["thread"]["post"]
     
     except Exception as e:
-        logger.error(f"Error in fetch_post: {e}")
+        logger.error(f"Error in process.fetch_post: {e}")
 
     return post
 
@@ -123,7 +127,10 @@ def get_image_download_path(image_url: str) -> str:
 def delete_images(images: list) -> list:
     for image in images:
         if image["complete"]:
-            os.remove(image["filepath"])
+            try:
+                os.remove(image["filepath"])
+            except FileNotFoundError as e:
+                logger.error(f"Error in process.delete_images: {e}")
     return []
 
 # Fetch post image -----------------------------------------------------------
@@ -167,7 +174,7 @@ async def fetch_image(post_image: dict) -> dict:
             f.write(response.content)
         
     except Exception as e:
-        logger.error(f"Error in fetch_image: {e}")
+        logger.error(f"Error in process.fetch_image: {e}")
     
     return image
 
@@ -193,17 +200,18 @@ async def fetch_images(post_images: list) -> list:
 
 # Classify images ------------------------------------------------------------
 
-def classify_images(images: list) -> list:
+def classify_images(predictor: Predictor, images: list) -> list:
 
-    # Classify with pseudo error
-    classify_errors = False
-    for image in images:
-        image["score"] = RNG.random()
-        if image["score"] < 0.02:
-            classify_errors = True
+    try:
+        image_paths = [image["filepath"] for image in images]
+        image_dataset = get_image_dataset(image_paths)
+        predictions = predictor.predict(image_dataset, batch_size=len(images))
+        probabilities = sigmoid(predictions)
+        for i in range(len(images)):
+            images[i]["score"] = np.float64(probabilities[i][0])
 
-    # If there were classify errors, delete images for this post
-    if classify_errors: 
+    except Exception as e:
+        logger.error(f"Error in process.classify_images: {e}")
         images = delete_images(images)
 
     return images
@@ -215,7 +223,7 @@ def drop_random_negatives(images: list) -> bool:
     # Randomly drop negative results below threshold
     drop = False
     highest_score = np.max([image["score"] for image in images])
-    if highest_score < 0.3 and RNG.random() < 0.5:
+    if highest_score < 0.3 and RNG.random() < 0.9:
         delete_images(images)
         drop = True
 
@@ -225,6 +233,7 @@ def drop_random_negatives(images: list) -> bool:
 
 async def process_post(
         client: AsyncClient,
+        predictor: Predictor,
         post_id: int,
         post_uri: str) -> dict:
     
@@ -252,7 +261,7 @@ async def process_post(
         return result
      
     # Classify images
-    classified_images = classify_images(images)
+    classified_images = classify_images(predictor, images)
 
     # If classify errors, return classify image error
     if len(classified_images) == 0:
@@ -298,11 +307,15 @@ def get_batch(batch_size: int) -> list:
 
 # Process batch --------------------------------------------------------------
 
-async def process_batch(client: AsyncClient, posts: list) -> list:
+async def process_batch(
+        client: AsyncClient, 
+        predictor: Predictor,
+        posts: list) -> list:
 
     # Create a generator of posts to process
     posts_generator = (process_post(
         client, 
+        predictor,
         post["post_id"], 
         post["post_uri"]) for post in posts)
     
@@ -365,6 +378,9 @@ async def process_batch(client: AsyncClient, posts: list) -> list:
 async def process(
         logfile: str = os.path.join("logs", "process.log")) -> None:
 
+    # Create predictor
+    predictor = load_predictor()
+
     # Create logger
     logging.basicConfig(
         filename=logfile, 
@@ -413,7 +429,7 @@ async def process(
         if len(posts) == 0:
             time.sleep(batch_wait)
 
-        await process_batch(client, posts)
+        await process_batch(client, predictor, posts)
 
 
 # Main -----------------------------------------------------------------------
