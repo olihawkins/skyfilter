@@ -18,7 +18,7 @@ from torchvision.transforms import Resize
 
 # Constants ------------------------------------------------------------------
 
-MODEL_PATH = os.path.join("models", "visnet-5.pt")
+MODEL_PATH = os.path.join("models", "visnet-5.1.pt")
 
 # Model class ----------------------------------------------------------------
 

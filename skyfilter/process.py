@@ -78,13 +78,18 @@ async def fetch_post(
 
     return post
 
+# Block post -----------------------------------------------------------------
+
+def block_post(post: dict) -> bool:
+    if nested_key_exists(post, ["author", "handle"]):
+        if post["author"]["handle"] == "cryptobot.yaizawa.jp":
+            return True
+    return False
+
 # Fetch post image URLs ------------------------------------------------------
 
-async def fetch_post_images(
-        client: AsyncClient,
-        post_uri: str) -> list:
+def get_post_images(post: dict) -> list:
 
-    post = await fetch_post(client, post_uri)
     post_images = []
 
     if nested_key_exists(post, ["embed", "images"]):
@@ -244,8 +249,16 @@ async def process_post(
         "post_uri": post_uri 
     }
 
+    # If post is on block list, return blocked
+    post = await fetch_post(client, post_uri)
+
+    # Post is on block list
+    if block_post(post) == True:
+        result["status_id"] = db.POST_STATUS_BLOCKED
+        return result
+
     # Fetch post images
-    post_images = await fetch_post_images(client, post_uri)
+    post_images = get_post_images(post)
     
     # If no post images, return fetch post error
     if len(post_images) == 0:
